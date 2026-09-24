@@ -9,19 +9,17 @@ from decimal import Decimal
 # Poradie a názvy stĺpcov v Google Sheete.
 COLUMNS = [
     "Dátum",
-    "Účet",
-    "Suma",
-    "Mena",
-    "Protistrana",
     "Účet protistrany",
+    "Protistrana",
+    "Suma",
     "VS",
-    "KS",
-    "SS",
     "Popis",
-    "Typ",
     "ID transakcie",
     "Stiahnuté",
 ]
+
+# Stĺpce zo staršej verzie, ktoré sa pri prestavbe hárku odstránia.
+REMOVED_COLUMNS = ["Účet", "Mena", "KS", "SS", "Typ"]
 
 # Stĺpec, podľa ktorého sa rozpoznávajú už zapísané transakcie.
 KEY_COLUMN = "ID transakcie"
@@ -61,16 +59,11 @@ class Transaction:
     def to_row(self) -> list:
         return [
             sheets_date(self.booking_date),
-            self.account,
-            float(self.amount),
-            self.currency,
-            self.counterparty_name,
             self.counterparty_account,
+            self.counterparty_name,
+            float(self.amount),
             self.variable_symbol,
-            self.constant_symbol,
-            self.specific_symbol,
             self.description,
-            self.type,
             self.key,
             self.fetched_at.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
         ]

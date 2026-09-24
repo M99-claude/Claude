@@ -9,7 +9,7 @@ from datetime import date
 import gspread
 
 from .config import SheetConfig
-from .models import COLUMNS, DATE_COLUMN, DATE_FORMAT, KEY_COLUMN, sheets_date
+from .models import COLUMNS, DATE_COLUMN, DATE_FORMAT, KEY_COLUMN, REMOVED_COLUMNS, sheets_date
 
 
 def _client() -> gspread.Client:
@@ -46,11 +46,35 @@ class TransactionSheet:
             self.ws.update([COLUMNS], "A1", value_input_option="RAW")
             self.ws.freeze(rows=1)
             header = COLUMNS
+        elif header[: len(COLUMNS)] != COLUMNS:
+            header = self._migrate_columns(header)
         for column in (KEY_COLUMN, DATE_COLUMN):
             if column not in header:
                 raise RuntimeError(f"Hárok {self.ws.title} má hlavičku bez stĺpca '{column}'")
         self.key_col = header.index(KEY_COLUMN) + 1
         self.date_col = header.index(DATE_COLUMN) + 1
+
+    def _migrate_columns(self, header: list[str]) -> list[str]:
+        """Prestaví existujúci hárok na aktuálne poradie stĺpcov.
+
+        Známe stĺpce sa presunú podľa názvu, stĺpce z REMOVED_COLUMNS sa zahodia
+        a vlastné stĺpce používateľa sa zachovajú na konci.
+        """
+        rows = self.ws.get_all_values(value_render_option=gspread.utils.ValueRenderOption.unformatted)
+        extra = [h for h in header if h and h not in COLUMNS and h not in REMOVED_COLUMNS]
+        new_header = COLUMNS + extra
+        index = {name: i for i, name in enumerate(header)}
+
+        def cell(row: list, name: str):
+            i = index.get(name)
+            return row[i] if i is not None and i < len(row) else ""
+
+        # Doplnenie prázdnymi bunkami vymaže obsah stĺpcov, ktoré po prestavbe ostanú navyše.
+        width = max(len(header), len(new_header))
+        pad = [""] * (width - len(new_header))
+        values = [new_header + pad] + [[cell(r, h) for h in new_header] + pad for r in rows[1:]]
+        self.ws.update(values, "A1", value_input_option="RAW")
+        return new_header
 
     def _ensure_date_format(self) -> None:
         letter = gspread.utils.rowcol_to_a1(1, self.date_col).rstrip("1")

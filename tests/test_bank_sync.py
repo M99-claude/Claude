@@ -202,7 +202,10 @@ class FakeWorksheet:
         return self.rows[n - 1] if len(self.rows) >= n else []
 
     def update(self, values, rng, value_input_option):
-        self.rows[:1] = values
+        self.rows[: len(values)] = [list(v) for v in values]
+
+    def get_all_values(self, value_render_option=None):
+        return [list(r) for r in self.rows]
 
     def freeze(self, rows):
         pass
@@ -249,3 +252,21 @@ def test_sheet_converts_old_iso_dates():
     TransactionSheet(ws)
     assert ws.rows[1][0] == 46287
     assert ws.rows[2][0] == 46288
+
+
+def test_sheet_migrates_old_column_layout():
+    from bank_sync.sheets import TransactionSheet
+
+    old_header = ["Dátum", "Účet", "Suma", "Mena", "Protistrana", "Účet protistrany", "VS", "KS",
+                  "SS", "Popis", "Typ", "ID transakcie", "Stiahnuté", "Moja kategória"]
+    old_row = [46288, "Fio", -12.5, "EUR", "Obchod", "SK31", "0012", "0308", "", "Nákup", "Platba",
+               "Fio:1", "2026-09-24 08:00:00", "jedlo"]
+    ws = FakeWorksheet([old_header, old_row])
+    sheet = TransactionSheet(ws)
+
+    assert ws.rows[0][: len(COLUMNS) + 1] == COLUMNS + ["Moja kategória"]
+    assert ws.rows[1][: len(COLUMNS) + 1] == [46288, "SK31", "Obchod", -12.5, "0012", "Nákup", "Fio:1",
+                                              "2026-09-24 08:00:00", "jedlo"]
+    # zvyšné staré stĺpce sú vyprázdnené
+    assert ws.rows[0][len(COLUMNS) + 1:] == [""] * (len(old_header) - len(COLUMNS) - 1)
+    assert sheet.existing_keys() == {"Fio:1"}
