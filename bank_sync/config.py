@@ -24,6 +24,8 @@ class AccountConfig:
 class SheetConfig:
     spreadsheet_id: str
     worksheet: str = "Transakcie"
+    # Jazykové nastavenie tabuľky – určuje desatinný oddeľovač (sk_SK = čiarka).
+    locale: str = "sk_SK"
 
 
 @dataclass
@@ -54,6 +56,7 @@ def load_config(path: str | Path) -> Config:
     sheet = SheetConfig(
         spreadsheet_id=spreadsheet_id,
         worksheet=sheet_raw.get("worksheet", "Transakcie"),
+        locale=sheet_raw.get("locale", "sk_SK"),
     )
 
     accounts = []

@@ -161,6 +161,7 @@ def test_config(tmp_path):
     )
     cfg = load_config(path)
     assert cfg.sheet.worksheet == "Transakcie"
+    assert cfg.sheet.locale == "sk_SK"
     assert cfg.accounts[0].options == {"token_env": "T"}
 
     path.write_text("google_sheet: {spreadsheet_id: abc}\naccounts: []\n", encoding="utf-8")
@@ -216,8 +217,8 @@ class FakeWorksheet:
     def col_values(self, col):
         return [str(r[col - 1]) for r in self.rows]
 
-    def format(self, rng, fmt):
-        self.formats = (rng, fmt)
+    def batch_format(self, formats):
+        self.formats = {f["range"]: f["format"]["numberFormat"] for f in formats}
 
     def batch_update(self, updates, value_input_option):
         from gspread.utils import a1_to_rowcol
@@ -240,7 +241,10 @@ def test_sheet_creates_header_and_reads_keys():
     assert ws.rows[0] == COLUMNS
     sheet.append([_tx("A", "1").to_row()])
     assert sheet.existing_keys() == {"A:1"}
-    assert ws.formats == ("A2:A", {"numberFormat": {"type": "DATE", "pattern": "dd.mm.yyyy"}})
+    assert ws.formats == {
+        "A2:A": {"type": "DATE", "pattern": "dd.mm.yyyy"},
+        "D2:D": {"type": "NUMBER", "pattern": "#,##0.00"},
+    }
 
 
 def test_date_is_sheets_serial():

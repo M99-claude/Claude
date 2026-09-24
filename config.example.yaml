@@ -7,6 +7,7 @@ google_sheet:
   # ID z URL: https://docs.google.com/spreadsheets/d/<TOTO_JE_ID>/edit
   spreadsheet_id: "1AbC...xyz"
   worksheet: Transakcie        # hárok sa vytvorí automaticky, ak neexistuje
+  locale: sk_SK                # jazykové nastavenie tabuľky – sk_SK = desatinná čiarka
 
 # Nastavenia pre banky pripojené cez Enable Banking (PSD2) – ak používate len Fio, zmažte.
 enablebanking:

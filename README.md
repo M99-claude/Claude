@@ -14,6 +14,8 @@ Podporované banky:
 
 Stĺpce v hárku: `Dátum, Účet protistrany, Protistrana, Suma, VS, Popis, IBAN účtu, ID transakcie,
 Stiahnuté`. IBAN účtu je IBAN vášho účtu, z ktorého bola transakcia stiahnutá.
+Suma sa zobrazuje s desatinnou čiarkou (`1 234,50`) – nástroj nastaví tabuľke slovenské jazykové
+nastavenie (`locale: sk_SK`, dá sa zmeniť v konfigurácii).
 ID transakcie má tvar `<názov účtu>:<ID z banky>` a slúži na rozpoznanie už zapísaných transakcií.
 Vlastné stĺpce pridané za tieto stĺpce nástroj nechá tak. Dátum je skutočný dátum vo formáte `DD.MM.YYYY` (dá sa podľa neho
 triediť a filtrovať). Odchádzajúce platby majú zápornú sumu. Ukladajú sa len zaúčtované

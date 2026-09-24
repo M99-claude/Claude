@@ -27,6 +27,9 @@ KEY_COLUMN = "ID transakcie"
 DATE_COLUMN = "Dátum"
 IBAN_COLUMN = "IBAN účtu"
 DATE_FORMAT = "dd.mm.yyyy"
+AMOUNT_COLUMN = "Suma"
+# Oddeľovače tisícov a desatinných miest sa zobrazia podľa locale tabuľky (sk_SK: 1 234,50).
+AMOUNT_FORMAT = "#,##0.00"
 
 # Google Sheets ukladá dátumy ako počet dní od 30.12.1899.
 _SHEETS_EPOCH = date(1899, 12, 30)

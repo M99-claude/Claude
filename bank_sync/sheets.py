@@ -9,7 +9,17 @@ from datetime import date
 import gspread
 
 from .config import SheetConfig
-from .models import COLUMNS, DATE_COLUMN, DATE_FORMAT, IBAN_COLUMN, KEY_COLUMN, REMOVED_COLUMNS, sheets_date
+from .models import (
+    AMOUNT_COLUMN,
+    AMOUNT_FORMAT,
+    COLUMNS,
+    DATE_COLUMN,
+    DATE_FORMAT,
+    IBAN_COLUMN,
+    KEY_COLUMN,
+    REMOVED_COLUMNS,
+    sheets_date,
+)
 
 
 def _client() -> gspread.Client:
@@ -29,11 +39,13 @@ class TransactionSheet:
     def __init__(self, worksheet: gspread.Worksheet):
         self.ws = worksheet
         self._ensure_header()
-        self._ensure_date_format()
+        self._ensure_formats()
 
     @classmethod
     def open(cls, config: SheetConfig) -> "TransactionSheet":
         spreadsheet = _client().open_by_key(config.spreadsheet_id)
+        if config.locale and spreadsheet.locale != config.locale:
+            spreadsheet.update_locale(config.locale)
         try:
             ws = spreadsheet.worksheet(config.worksheet)
         except gspread.WorksheetNotFound:
@@ -48,12 +60,13 @@ class TransactionSheet:
             header = COLUMNS
         elif header[: len(COLUMNS)] != COLUMNS:
             header = self._migrate_columns(header)
-        for column in (KEY_COLUMN, DATE_COLUMN, IBAN_COLUMN):
+        for column in (KEY_COLUMN, DATE_COLUMN, IBAN_COLUMN, AMOUNT_COLUMN):
             if column not in header:
                 raise RuntimeError(f"Hárok {self.ws.title} má hlavičku bez stĺpca '{column}'")
         self.key_col = header.index(KEY_COLUMN) + 1
         self.date_col = header.index(DATE_COLUMN) + 1
         self.iban_col = header.index(IBAN_COLUMN) + 1
+        self.amount_col = header.index(AMOUNT_COLUMN) + 1
 
     def _migrate_columns(self, header: list[str]) -> list[str]:
         """Prestaví existujúci hárok na aktuálne poradie stĺpcov.
@@ -77,9 +90,13 @@ class TransactionSheet:
         self.ws.update(values, "A1", value_input_option="RAW")
         return new_header
 
-    def _ensure_date_format(self) -> None:
+    def _ensure_formats(self) -> None:
+        amount = gspread.utils.rowcol_to_a1(1, self.amount_col).rstrip("1")
         letter = gspread.utils.rowcol_to_a1(1, self.date_col).rstrip("1")
-        self.ws.format(f"{letter}2:{letter}", {"numberFormat": {"type": "DATE", "pattern": DATE_FORMAT}})
+        self.ws.batch_format([
+            {"range": f"{letter}2:{letter}", "format": {"numberFormat": {"type": "DATE", "pattern": DATE_FORMAT}}},
+            {"range": f"{amount}2:{amount}", "format": {"numberFormat": {"type": "NUMBER", "pattern": AMOUNT_FORMAT}}},
+        ])
 
         # Staršie riadky zapísané ako text „2026-09-23“ prevedieme na skutočný dátum.
         updates = []
