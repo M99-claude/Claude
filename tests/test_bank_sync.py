@@ -156,13 +156,16 @@ def test_config(tmp_path):
     path = tmp_path / "c.yaml"
     path.write_text(
         "google_sheet: {spreadsheet_id: abc}\n"
-        "accounts:\n  - {name: Fio, provider: fio, token_env: T}\n",
+        "accounts:\n  - {name: Fio, provider: fio, token_env: T}\n"
+        "  - {name: Iný, provider: fio, token_env: U, worksheet: Druhý}\n",
         encoding="utf-8",
     )
     cfg = load_config(path)
     assert cfg.sheet.worksheet == "Transakcie"
     assert cfg.sheet.locale == "sk_SK"
     assert cfg.accounts[0].options == {"token_env": "T"}
+    assert [a.worksheet for a in cfg.accounts] == ["Transakcie", "Druhý"]
+    assert cfg.accounts[1].options == {"token_env": "U"}
 
     path.write_text("google_sheet: {spreadsheet_id: abc}\naccounts: []\n", encoding="utf-8")
     with pytest.raises(ConfigError):
@@ -170,7 +173,7 @@ def test_config(tmp_path):
 
 
 def test_example_config_is_valid():
-    assert len(load_config("config.example.yaml").accounts) == 2
+    assert len(load_config("config.example.yaml").accounts) == 3
 
 
 def test_cli_rejects_inverted_range(tmp_path, monkeypatch):
@@ -323,3 +326,26 @@ def test_sheet_fill_account_iban_only_empty_cells():
     TransactionSheet(ws).fill_account_iban({"Fio": "SK_A", "Fio 2": "SK_B"})
     col = COLUMNS.index("IBAN účtu")
     assert [r[col] for r in ws.rows[1:]] == ["SK_A", "SK_B", "SK_OLD"]
+
+
+def test_cli_writes_each_account_to_its_worksheet(tmp_path, monkeypatch):
+    import bank_sync.providers as providers_mod
+    from bank_sync.sheets import TransactionSheet
+
+    path = tmp_path / "c.yaml"
+    path.write_text(
+        "google_sheet: {spreadsheet_id: abc}\n"
+        "accounts:\n"
+        "  - {name: A, provider: fio}\n"
+        "  - {name: B, provider: fio}\n"
+        "  - {name: C, provider: fio, worksheet: Iný}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(providers_mod, "build_provider", lambda a, cfg: FakeProvider([_tx(a.name, "1")]))
+    sheets = {"Transakcie": FakeSheet(), "Iný": FakeSheet()}
+    monkeypatch.setattr(TransactionSheet, "open_all", classmethod(lambda cls, cfg, names: {n: sheets[n] for n in names}))
+
+    assert main(["-c", str(path), "sync", "--date", "2026-09-23"]) == 0
+    key = COLUMNS.index("ID transakcie")
+    assert [r[key] for r in sheets["Transakcie"].rows] == ["A:1", "B:1"]
+    assert [r[key] for r in sheets["Iný"].rows] == ["C:1"]

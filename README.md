@@ -73,6 +73,9 @@ python -m bank_sync sync --from 2026-01-01 --date 2026-06-30   # spätné načí
 python -m bank_sync sync --account "Fio firemný"               # len jeden účet
 ```
 
+Každý účet môže mať vlastný hárok (`worksheet:` pri účte); bez neho sa zapisuje do
+`google_sheet.worksheet`. Chýbajúci hárok sa vytvorí automaticky.
+
 Ak niektorý účet zlyhá, ostatné sa aj tak zapíšu a príkaz skončí s návratovým kódom 1.
 
 ## 4. Denné spúšťanie cez GitHub Actions

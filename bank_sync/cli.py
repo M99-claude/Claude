@@ -29,15 +29,24 @@ def cmd_sync(args) -> int:
         return 2
 
     accounts = [a for a in config.accounts if not args.account or a.name in args.account]
-    providers = {a.name: build_provider(a, config) for a in accounts}
-    sheet = TransactionSheet.open(config.sheet)
+    # Účty zoskupené podľa hárku, do ktorého sa zapisujú.
+    groups: dict[str, dict] = {}
+    for a in accounts:
+        groups.setdefault(a.worksheet, {})[a.name] = build_provider(a, config)
+    sheets = TransactionSheet.open_all(config.sheet, list(groups))
 
-    log.info("Sťahujem transakcie %s – %s pre %d účtov", date_from, date_to, len(providers))
-    result = sync(providers, sheet, date_from, date_to, dry_run=args.dry_run)
-    log.info("Pridaných: %d, už existujúcich: %d, chýb: %d", result.added, result.skipped, len(result.errors))
-    for name, err in result.errors.items():
+    log.info("Sťahujem transakcie %s – %s pre %d účtov", date_from, date_to, len(accounts))
+    errors = {}
+    for worksheet, providers in groups.items():
+        result = sync(providers, sheets[worksheet], date_from, date_to, dry_run=args.dry_run)
+        log.info(
+            "Hárok %s: pridaných %d, už existujúcich %d, chýb %d",
+            worksheet, result.added, result.skipped, len(result.errors),
+        )
+        errors.update(result.errors)
+    for name, err in errors.items():
         log.error("  %s: %s", name, err)
-    return 1 if result.errors else 0
+    return 1 if errors else 0
 
 
 def _eb_client(args):

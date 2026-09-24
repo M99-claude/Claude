@@ -18,6 +18,7 @@ class AccountConfig:
     name: str  # alias, ktorý sa zapíše do stĺpca „Účet“
     provider: str  # "fio" | "enablebanking"
     options: dict = field(default_factory=dict)
+    worksheet: str = ""  # hárok, do ktorého sa účet zapisuje (predvolene google_sheet.worksheet)
 
 
 @dataclass
@@ -70,7 +71,8 @@ def load_config(path: str | Path) -> Config:
         if name in names:
             raise ConfigError(f"Duplicitný názov účtu: {name}")
         names.add(name)
-        accounts.append(AccountConfig(name=name, provider=provider, options=item))
+        worksheet = item.pop("worksheet", None) or sheet.worksheet
+        accounts.append(AccountConfig(name=name, provider=provider, options=item, worksheet=worksheet))
     if not accounts:
         raise ConfigError("V konfigurácii nie je žiadny účet (sekcia accounts)")
 

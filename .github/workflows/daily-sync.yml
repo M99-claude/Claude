@@ -38,3 +38,4 @@ jobs:
           # Pre každý Fio účet jeden riadok – názov musí sedieť s token_env v konfigurácii.
           FIO_TOKEN_FIRMA: ${{ secrets.FIO_TOKEN_FIRMA }}
           FIO_TOKEN_2: ${{ secrets.FIO_TOKEN_2 }}
+          FIO_TOKEN_3: ${{ secrets.FIO_TOKEN_3 }}

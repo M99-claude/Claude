@@ -21,6 +21,12 @@ accounts:
     provider: fio
     token_env: FIO_TOKEN_FIRMA
 
+  # Účet zapisovaný do iného hárku tej istej tabuľky
+  - name: Fio súkromný
+    provider: fio
+    token_env: FIO_TOKEN_3
+    worksheet: Súkromný účet
+
   # Tatra banka / SLSP / VÚB / ČSOB ... cez Enable Banking
   - name: Tatra osobný
     provider: enablebanking

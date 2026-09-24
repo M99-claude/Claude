@@ -42,15 +42,19 @@ class TransactionSheet:
         self._ensure_formats()
 
     @classmethod
-    def open(cls, config: SheetConfig) -> "TransactionSheet":
+    def open_all(cls, config: SheetConfig, worksheets: list[str]) -> dict[str, "TransactionSheet"]:
+        """Otvorí (alebo vytvorí) zadané hárky v tabuľke."""
         spreadsheet = _client().open_by_key(config.spreadsheet_id)
         if config.locale and spreadsheet.locale != config.locale:
             spreadsheet.update_locale(config.locale)
-        try:
-            ws = spreadsheet.worksheet(config.worksheet)
-        except gspread.WorksheetNotFound:
-            ws = spreadsheet.add_worksheet(config.worksheet, rows=1000, cols=len(COLUMNS))
-        return cls(ws)
+        sheets = {}
+        for name in worksheets:
+            try:
+                ws = spreadsheet.worksheet(name)
+            except gspread.WorksheetNotFound:
+                ws = spreadsheet.add_worksheet(name, rows=1000, cols=len(COLUMNS))
+            sheets[name] = cls(ws)
+        return sheets
 
     def _ensure_header(self) -> None:
         header = self.ws.row_values(1)
