@@ -2,8 +2,11 @@ name: Denná synchronizácia transakcií
 
 on:
   schedule:
-    # 06:00 UTC = 07:00/08:00 v Bratislave (zimný/letný čas)
-    - cron: "0 6 * * *"
+    # Cieľ: 06:00 v Bratislave. GitHub pozná len UTC, preto dva behy –
+    # 04:00 UTC = 06:00 letného času (CEST), 05:00 UTC = 06:00 zimného času (CET).
+    # Job „time-check“ pustí ďalej len ten, ktorý práve zodpovedá 6:00.
+    - cron: "0 4 * * *"
+    - cron: "0 5 * * *"
   workflow_dispatch:
     inputs:
       days:
@@ -13,7 +16,26 @@ on:
 concurrency: bank-sync
 
 jobs:
+  time-check:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          if [ "$EVENT" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # +0200 = letný čas → beh o 04:00 UTC, +0100 = zimný čas → beh o 05:00 UTC
+          if [ "$(TZ=Europe/Bratislava date +%z)" = "+0200" ]; then wanted="0 4 * * *"; else wanted="0 5 * * *"; fi
+          if [ "$SCHEDULE" = "$wanted" ]; then echo "run=true"; else echo "run=false"; fi >> "$GITHUB_OUTPUT"
+
   sync:
+    needs: time-check
+    if: needs.time-check.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

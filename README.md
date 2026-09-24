@@ -80,7 +80,7 @@ Ak niektorý účet zlyhá, ostatné sa aj tak zapíšu a príkaz skončí s ná
 
 ## 4. Denné spúšťanie cez GitHub Actions
 
-Workflow `.github/workflows/daily-sync.yml` beží každý deň o 6:00 UTC (7:00/8:00 v SR) a dá sa
+Workflow `.github/workflows/daily-sync.yml` beží každý deň o 6:00 slovenského času (v lete aj v zime) a dá sa
 spustiť aj ručne (Actions → *Run workflow*, s voliteľným počtom dní).
 
 V repozitári nastavte *Settings → Secrets and variables → Actions*:
