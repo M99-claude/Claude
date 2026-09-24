@@ -1,0 +1,66 @@
+"""Spoločný formát transakcie, do ktorého každý provider prekladá dáta z banky."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import date, datetime, timezone
+from decimal import Decimal
+
+# Poradie a názvy stĺpcov v Google Sheete.
+COLUMNS = [
+    "Dátum",
+    "Účet",
+    "Suma",
+    "Mena",
+    "Protistrana",
+    "Účet protistrany",
+    "VS",
+    "KS",
+    "SS",
+    "Popis",
+    "Typ",
+    "ID transakcie",
+    "Stiahnuté",
+]
+
+# Stĺpec, podľa ktorého sa rozpoznávajú už zapísané transakcie.
+KEY_COLUMN = "ID transakcie"
+
+
+@dataclass(frozen=True)
+class Transaction:
+    account: str  # alias účtu z konfigurácie
+    transaction_id: str  # ID pridelené bankou, unikátne v rámci účtu
+    booking_date: date
+    amount: Decimal  # záporná suma = odchádzajúca platba
+    currency: str
+    counterparty_name: str = ""
+    counterparty_account: str = ""
+    variable_symbol: str = ""
+    constant_symbol: str = ""
+    specific_symbol: str = ""
+    description: str = ""
+    type: str = ""
+    fetched_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def key(self) -> str:
+        """Globálne unikátny kľúč (ID banky nemusí byť unikátne naprieč účtami)."""
+        return f"{self.account}:{self.transaction_id}"
+
+    def to_row(self) -> list:
+        return [
+            self.booking_date.isoformat(),
+            self.account,
+            float(self.amount),
+            self.currency,
+            self.counterparty_name,
+            self.counterparty_account,
+            self.variable_symbol,
+            self.constant_symbol,
+            self.specific_symbol,
+            self.description,
+            self.type,
+            self.key,
+            self.fetched_at.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+        ]

@@ -1,0 +1,39 @@
+name: Denná synchronizácia transakcií
+
+on:
+  schedule:
+    # 06:00 UTC = 07:00/08:00 v Bratislave (zimný/letný čas)
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Počet dní dozadu (1 = len včerajšok)"
+        default: "1"
+
+concurrency: bank-sync
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Konfigurácia zo secretu
+        run: printf '%s' "$CONFIG_YAML" > config.yaml
+        env:
+          CONFIG_YAML: ${{ secrets.CONFIG_YAML }}
+
+      - name: Synchronizácia
+        run: python -m bank_sync sync --days "$DAYS"
+        env:
+          DAYS: ${{ inputs.days || '1' }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          ENABLEBANKING_PRIVATE_KEY: ${{ secrets.ENABLEBANKING_PRIVATE_KEY }}
+          # Pre každý Fio účet jeden riadok – názov musí sedieť s token_env v konfigurácii.
+          FIO_TOKEN_FIRMA: ${{ secrets.FIO_TOKEN_FIRMA }}

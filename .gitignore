@@ -1,0 +1,7 @@
+config.yaml
+*.pem
+*service-account*.json
+.env
+__pycache__/
+.pytest_cache/
+.venv/

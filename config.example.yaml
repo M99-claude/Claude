@@ -1,0 +1,26 @@
+# Skopírujte na config.yaml a upravte. Tajné údaje (tokeny, kľúče) sem nepíšte –
+# uvádzajú sa len názvy premenných prostredia, z ktorých sa načítajú.
+
+timezone: Europe/Bratislava   # podľa neho sa určuje „včerajší deň“
+
+google_sheet:
+  # ID z URL: https://docs.google.com/spreadsheets/d/<TOTO_JE_ID>/edit
+  spreadsheet_id: "1AbC...xyz"
+  worksheet: Transakcie        # hárok sa vytvorí automaticky, ak neexistuje
+
+# Nastavenia pre banky pripojené cez Enable Banking (PSD2) – ak používate len Fio, zmažte.
+enablebanking:
+  application_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+  private_key_env: ENABLEBANKING_PRIVATE_KEY   # obsah .pem súboru
+  # alebo lokálne: private_key_path: ./enablebanking.pem
+
+accounts:
+  # Fio banka – token z internetbankingu
+  - name: Fio firemný
+    provider: fio
+    token_env: FIO_TOKEN_FIRMA
+
+  # Tatra banka / SLSP / VÚB / ČSOB ... cez Enable Banking
+  - name: Tatra osobný
+    provider: enablebanking
+    account_uid: "00000000-0000-0000-0000-000000000000"   # z `python -m bank_sync eb-session <code>`
