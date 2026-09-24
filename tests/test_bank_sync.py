@@ -208,7 +208,15 @@ class FakeWorksheet:
         pass
 
     def col_values(self, col):
-        return [r[col - 1] for r in self.rows]
+        return [str(r[col - 1]) for r in self.rows]
+
+    def format(self, rng, fmt):
+        self.formats = (rng, fmt)
+
+    def batch_update(self, updates, value_input_option):
+        for u in updates:
+            row = int(u["range"][1:])
+            self.rows[row - 1][0] = u["values"][0][0]
 
     def append_rows(self, rows, value_input_option, table_range):
         self.rows.extend(rows)
@@ -222,3 +230,22 @@ def test_sheet_creates_header_and_reads_keys():
     assert ws.rows[0] == COLUMNS
     sheet.append([_tx("A", "1").to_row()])
     assert sheet.existing_keys() == {"A:1"}
+    assert ws.formats == ("A2:A", {"numberFormat": {"type": "DATE", "pattern": "dd.mm.yyyy"}})
+
+
+def test_date_is_sheets_serial():
+    from bank_sync.models import sheets_date
+
+    assert sheets_date(date(2026, 9, 23)) == 46288  # =DATE(2026;9;23) v Google Sheets
+    assert _tx("A", "1").to_row()[0] == sheets_date(date(2026, 9, 23))
+
+
+def test_sheet_converts_old_iso_dates():
+    from bank_sync.sheets import TransactionSheet
+
+    old = ["2026-09-22"] + [""] * (len(COLUMNS) - 1)
+    already = [46288] + [""] * (len(COLUMNS) - 1)
+    ws = FakeWorksheet([list(COLUMNS), old, already])
+    TransactionSheet(ws)
+    assert ws.rows[1][0] == 46287
+    assert ws.rows[2][0] == 46288

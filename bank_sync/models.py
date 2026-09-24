@@ -25,6 +25,16 @@ COLUMNS = [
 
 # Stĺpec, podľa ktorého sa rozpoznávajú už zapísané transakcie.
 KEY_COLUMN = "ID transakcie"
+DATE_COLUMN = "Dátum"
+DATE_FORMAT = "dd.mm.yyyy"
+
+# Google Sheets ukladá dátumy ako počet dní od 30.12.1899.
+_SHEETS_EPOCH = date(1899, 12, 30)
+
+
+def sheets_date(d: date) -> int:
+    """Dátum ako číslo, ktoré Sheets zobrazí podľa formátu stĺpca (DD.MM.YYYY)."""
+    return (d - _SHEETS_EPOCH).days
 
 
 @dataclass(frozen=True)
@@ -50,7 +60,7 @@ class Transaction:
 
     def to_row(self) -> list:
         return [
-            self.booking_date.isoformat(),
+            sheets_date(self.booking_date),
             self.account,
             float(self.amount),
             self.currency,

@@ -13,7 +13,8 @@ Podporované banky:
 | `enablebanking` | Tatra banka, SLSP, VÚB, ČSOB SK, 365.bank, UniCredit a ďalšie | PSD2 cez [Enable Banking](https://enablebanking.com) |
 
 Stĺpce v hárku: `Dátum, Účet, Suma, Mena, Protistrana, Účet protistrany, VS, KS, SS, Popis, Typ,
-ID transakcie, Stiahnuté`. Odchádzajúce platby majú zápornú sumu. Ukladajú sa len zaúčtované
+ID transakcie, Stiahnuté`. Dátum je skutočný dátum vo formáte `DD.MM.YYYY` (dá sa podľa neho
+triediť a filtrovať). Odchádzajúce platby majú zápornú sumu. Ukladajú sa len zaúčtované
 transakcie (nie čakajúce/blokované).
 
 ## 1. Google Sheet
