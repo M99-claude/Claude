@@ -36,6 +36,6 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           ENABLEBANKING_PRIVATE_KEY: ${{ secrets.ENABLEBANKING_PRIVATE_KEY }}
           # Pre každý Fio účet jeden riadok – názov musí sedieť s token_env v konfigurácii.
-          FIO_TOKEN_FIRMA: ${{ secrets.FIO_TOKEN_FIRMA }}
+          FIO_TOKEN_1: ${{ secrets.FIO_TOKEN_1 }}
           FIO_TOKEN_2: ${{ secrets.FIO_TOKEN_2 }}
           FIO_TOKEN_3: ${{ secrets.FIO_TOKEN_3 }}

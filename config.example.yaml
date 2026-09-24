@@ -19,7 +19,7 @@ accounts:
   # Fio banka – token z internetbankingu
   - name: Fio firemný
     provider: fio
-    token_env: FIO_TOKEN_FIRMA
+    token_env: FIO_TOKEN_1
 
   # Účet zapisovaný do iného hárku tej istej tabuľky
   - name: Fio súkromný

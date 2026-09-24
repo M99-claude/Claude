@@ -64,7 +64,7 @@ pip install -r requirements.txt
 cp config.example.yaml config.yaml    # a upravte
 
 export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
-export FIO_TOKEN_FIRMA=...
+export FIO_TOKEN_1=...
 
 python -m bank_sync sync --dry-run     # len vypíše, čo by zapísal
 python -m bank_sync sync               # včerajšok
@@ -90,7 +90,7 @@ V repozitári nastavte *Settings → Secrets and variables → Actions*:
 | `CONFIG_YAML`                 | celý obsah vášho `config.yaml`                     |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | obsah JSON kľúča service accountu                  |
 | `ENABLEBANKING_PRIVATE_KEY`   | obsah `.pem` súboru (ak používate Enable Banking)  |
-| `FIO_TOKEN_FIRMA` …           | token každého Fio účtu – názov podľa `token_env`   |
+| `FIO_TOKEN_1` …               | token každého Fio účtu – názov podľa `token_env`   |
 
 Pri pridaní ďalšieho Fio účtu doplňte jeho premennú aj do sekcie `env` vo workflow.
 GitHub pri zlyhaní behu pošle e-mail – tak sa dozviete napr. o vypršanom súhlase banky.
