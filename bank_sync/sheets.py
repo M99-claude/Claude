@@ -9,7 +9,7 @@ from datetime import date
 import gspread
 
 from .config import SheetConfig
-from .models import COLUMNS, DATE_COLUMN, DATE_FORMAT, KEY_COLUMN, REMOVED_COLUMNS, sheets_date
+from .models import COLUMNS, DATE_COLUMN, DATE_FORMAT, IBAN_COLUMN, KEY_COLUMN, REMOVED_COLUMNS, sheets_date
 
 
 def _client() -> gspread.Client:
@@ -48,11 +48,12 @@ class TransactionSheet:
             header = COLUMNS
         elif header[: len(COLUMNS)] != COLUMNS:
             header = self._migrate_columns(header)
-        for column in (KEY_COLUMN, DATE_COLUMN):
+        for column in (KEY_COLUMN, DATE_COLUMN, IBAN_COLUMN):
             if column not in header:
                 raise RuntimeError(f"Hárok {self.ws.title} má hlavičku bez stĺpca '{column}'")
         self.key_col = header.index(KEY_COLUMN) + 1
         self.date_col = header.index(DATE_COLUMN) + 1
+        self.iban_col = header.index(IBAN_COLUMN) + 1
 
     def _migrate_columns(self, header: list[str]) -> list[str]:
         """Prestaví existujúci hárok na aktuálne poradie stĺpcov.
@@ -88,6 +89,21 @@ class TransactionSheet:
             except ValueError:
                 continue
             updates.append({"range": f"{letter}{row}", "values": [[sheets_date(parsed)]]})
+        if updates:
+            self.ws.batch_update(updates, value_input_option="RAW")
+
+    def fill_account_iban(self, ibans: dict[str, str]) -> None:
+        """Doplní prázdny IBAN účtu podľa názvu účtu v ID transakcie („Fio:123“)."""
+        keys = self.ws.col_values(self.key_col)
+        current = self.ws.col_values(self.iban_col)
+        letter = gspread.utils.rowcol_to_a1(1, self.iban_col).rstrip("1")
+        updates = []
+        for row in range(2, len(keys) + 1):
+            if row <= len(current) and current[row - 1]:
+                continue
+            account = keys[row - 1].split(":", 1)[0]
+            if account in ibans:
+                updates.append({"range": f"{letter}{row}", "values": [[ibans[account]]]})
         if updates:
             self.ws.batch_update(updates, value_input_option="RAW")
 

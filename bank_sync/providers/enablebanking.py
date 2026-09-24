@@ -15,6 +15,7 @@ Súhlas (consent) platí podľa banky zvyčajne 90–180 dní, potom treba kroky
 
 from __future__ import annotations
 
+import logging
 import time
 import uuid
 from datetime import date, datetime, timedelta, timezone
@@ -27,6 +28,8 @@ from ..config import ConfigError, env
 from ..models import Transaction
 
 API_URL = "https://api.enablebanking.com"
+
+log = logging.getLogger(__name__)
 
 
 class EnableBankingClient:
@@ -106,7 +109,7 @@ def _symbol(ref: str, name: str) -> str:
     return ""
 
 
-def parse_transaction(account: str, tx: dict) -> Transaction:
+def parse_transaction(account: str, tx: dict, iban: str = "") -> Transaction:
     amount = Decimal(str(tx["transaction_amount"]["amount"]))
     outgoing = tx.get("credit_debit_indicator") == "DBIT"
     if outgoing and amount > 0:
@@ -142,6 +145,7 @@ def parse_transaction(account: str, tx: dict) -> Transaction:
         specific_symbol=_symbol(e2e, "SS"),
         description=" ".join(tx.get("remittance_information") or []).strip(),
         type=bank_code.get("description") or bank_code.get("code") or "",
+        account_iban=iban,
     )
 
 
@@ -152,9 +156,20 @@ class EnableBankingProvider:
         if not self.account_uid:
             raise ConfigError(f"Účet {account}: chýba account_uid (získate cez eb-session)")
         self.client = client or EnableBankingClient(settings)
+        self.iban = options.get("iban", "")
+
+    def _load_iban(self) -> None:
+        if self.iban:
+            return
+        try:
+            details = self.client.request("GET", f"/accounts/{self.account_uid}/details")
+            self.iban = (details.get("account_id") or {}).get("iban") or ""
+        except Exception as exc:  # noqa: BLE001 – bez IBAN sa dá pokračovať
+            log.warning("Účet %s: IBAN sa nepodarilo zistiť (%s), doplňte 'iban' do konfigurácie", self.account, exc)
 
     def fetch(self, date_from: date, date_to: date) -> list[Transaction]:
+        self._load_iban()
         raw = self.client.transactions(self.account_uid, date_from, date_to)
         # Zapisujeme len zaúčtované transakcie; čakajúce (PDNG) sa ešte môžu zmeniť.
         booked = [t for t in raw if t.get("status", "BOOK") == "BOOK"]
-        return [parse_transaction(self.account, t) for t in booked]
+        return [parse_transaction(self.account, t, self.iban) for t in booked]

@@ -12,7 +12,8 @@ Podporované banky:
 | `fio`           | Fio banka                                                     | API token z internetbankingu              |
 | `enablebanking` | Tatra banka, SLSP, VÚB, ČSOB SK, 365.bank, UniCredit a ďalšie | PSD2 cez [Enable Banking](https://enablebanking.com) |
 
-Stĺpce v hárku: `Dátum, Účet protistrany, Protistrana, Suma, VS, Popis, ID transakcie, Stiahnuté`.
+Stĺpce v hárku: `Dátum, Účet protistrany, Protistrana, Suma, VS, Popis, IBAN účtu, ID transakcie,
+Stiahnuté`. IBAN účtu je IBAN vášho účtu, z ktorého bola transakcia stiahnutá.
 ID transakcie má tvar `<názov účtu>:<ID z banky>` a slúži na rozpoznanie už zapísaných transakcií.
 Vlastné stĺpce pridané za tieto stĺpce nástroj nechá tak. Dátum je skutočný dátum vo formáte `DD.MM.YYYY` (dá sa podľa neho
 triediť a filtrovať). Odchádzajúce platby majú zápornú sumu. Ukladajú sa len zaúčtované

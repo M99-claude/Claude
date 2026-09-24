@@ -14,6 +14,7 @@ COLUMNS = [
     "Suma",
     "VS",
     "Popis",
+    "IBAN účtu",
     "ID transakcie",
     "Stiahnuté",
 ]
@@ -24,6 +25,7 @@ REMOVED_COLUMNS = ["Účet", "Mena", "KS", "SS", "Typ"]
 # Stĺpec, podľa ktorého sa rozpoznávajú už zapísané transakcie.
 KEY_COLUMN = "ID transakcie"
 DATE_COLUMN = "Dátum"
+IBAN_COLUMN = "IBAN účtu"
 DATE_FORMAT = "dd.mm.yyyy"
 
 # Google Sheets ukladá dátumy ako počet dní od 30.12.1899.
@@ -49,6 +51,7 @@ class Transaction:
     specific_symbol: str = ""
     description: str = ""
     type: str = ""
+    account_iban: str = ""  # IBAN účtu, z ktorého sa transakcia stiahla
     fetched_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
@@ -64,6 +67,7 @@ class Transaction:
             float(self.amount),
             self.variable_symbol,
             self.description,
+            self.account_iban,
             self.key,
             self.fetched_at.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
         ]

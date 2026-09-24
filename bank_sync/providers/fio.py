@@ -27,7 +27,7 @@ def _col(tx: dict, n: int) -> str:
     return str(column["value"]).strip()
 
 
-def parse_transaction(account: str, tx: dict) -> Transaction:
+def parse_transaction(account: str, tx: dict, iban: str = "") -> Transaction:
     counterparty_account = _col(tx, 2)
     bank_code = _col(tx, 3)
     if counterparty_account and bank_code:
@@ -49,6 +49,7 @@ def parse_transaction(account: str, tx: dict) -> Transaction:
         specific_symbol=_col(tx, 6),
         description=description,
         type=_col(tx, 8),
+        account_iban=iban,
     )
 
 
@@ -58,6 +59,7 @@ class FioProvider:
         self.token = env(options.get("token_env", "FIO_TOKEN"))
         self.base_url = options.get("base_url", DEFAULT_BASE_URL).rstrip("/")
         self.http = session or requests.Session()
+        self.iban = ""  # doplní sa z hlavičky výpisu pri fetch()
 
     def fetch(self, date_from: date, date_to: date) -> list[Transaction]:
         url = (
@@ -75,7 +77,7 @@ class FioProvider:
             # URL obsahuje token, preto ho do chyby nedávame.
             raise RuntimeError(f"Fio API vrátilo HTTP {resp.status_code} pre účet {self.account}")
 
-        tx_list = (resp.json().get("accountStatement", {}).get("transactionList") or {}).get(
-            "transaction"
-        ) or []
-        return [parse_transaction(self.account, tx) for tx in tx_list]
+        statement = resp.json().get("accountStatement", {})
+        self.iban = (statement.get("info") or {}).get("iban") or ""
+        tx_list = (statement.get("transactionList") or {}).get("transaction") or []
+        return [parse_transaction(self.account, tx, self.iban) for tx in tx_list]

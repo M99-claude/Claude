@@ -109,6 +109,9 @@ class FakeSheet:
     def append(self, rows):
         self.rows.extend(rows)
 
+    def fill_account_iban(self, ibans):
+        self.ibans = ibans
+
 
 class FakeProvider:
     def __init__(self, txs=None, error=None):
@@ -217,9 +220,13 @@ class FakeWorksheet:
         self.formats = (rng, fmt)
 
     def batch_update(self, updates, value_input_option):
+        from gspread.utils import a1_to_rowcol
+
         for u in updates:
-            row = int(u["range"][1:])
-            self.rows[row - 1][0] = u["values"][0][0]
+            row, col = a1_to_rowcol(u["range"])
+            line = self.rows[row - 1]
+            line.extend([""] * (col - len(line)))
+            line[col - 1] = u["values"][0][0]
 
     def append_rows(self, rows, value_input_option, table_range):
         self.rows.extend(rows)
@@ -265,8 +272,50 @@ def test_sheet_migrates_old_column_layout():
     sheet = TransactionSheet(ws)
 
     assert ws.rows[0][: len(COLUMNS) + 1] == COLUMNS + ["Moja kategória"]
-    assert ws.rows[1][: len(COLUMNS) + 1] == [46288, "SK31", "Obchod", -12.5, "0012", "Nákup", "Fio:1",
-                                              "2026-09-24 08:00:00", "jedlo"]
+    assert ws.rows[1][: len(COLUMNS) + 1] == [46288, "SK31", "Obchod", -12.5, "0012", "Nákup", "",
+                                              "Fio:1", "2026-09-24 08:00:00", "jedlo"]
     # zvyšné staré stĺpce sú vyprázdnené
     assert ws.rows[0][len(COLUMNS) + 1:] == [""] * (len(old_header) - len(COLUMNS) - 1)
     assert sheet.existing_keys() == {"Fio:1"}
+
+
+def test_fio_fetch_reads_account_iban(monkeypatch):
+    class Resp:
+        status_code = 200
+
+        def json(self):
+            return {"accountStatement": {"info": {"iban": "SK1283300000002900123456"},
+                                         "transactionList": {"transaction": [FIO_TX]}}}
+
+    class Http:
+        def get(self, url, timeout):
+            return Resp()
+
+    monkeypatch.setenv("FIO_TEST_TOKEN", "x")
+    p = fio.FioProvider("Fio", {"token_env": "FIO_TEST_TOKEN"}, session=Http())
+    (tx,) = p.fetch(date(2026, 9, 23), date(2026, 9, 23))
+    assert p.iban == tx.account_iban == "SK1283300000002900123456"
+    assert tx.to_row()[COLUMNS.index("IBAN účtu")] == "SK1283300000002900123456"
+
+
+def test_sync_backfills_iban_for_existing_rows():
+    sheet = FakeSheet()
+    provider = FakeProvider([_tx("A", "1")])
+    provider.iban = "SK00"
+    sync({"A": provider, "B": FakeProvider()}, sheet, date(2026, 9, 23), date(2026, 9, 23))
+    assert sheet.ibans == {"A": "SK00"}
+
+
+def test_sheet_fill_account_iban_only_empty_cells():
+    from bank_sync.sheets import TransactionSheet
+
+    def row(key, iban=""):
+        r = [46288] + [""] * (len(COLUMNS) - 1)
+        r[COLUMNS.index("ID transakcie")] = key
+        r[COLUMNS.index("IBAN účtu")] = iban
+        return r
+
+    ws = FakeWorksheet([list(COLUMNS), row("Fio:1"), row("Fio 2:5"), row("Fio:2", "SK_OLD")])
+    TransactionSheet(ws).fill_account_iban({"Fio": "SK_A", "Fio 2": "SK_B"})
+    col = COLUMNS.index("IBAN účtu")
+    assert [r[col] for r in ws.rows[1:]] == ["SK_A", "SK_B", "SK_OLD"]

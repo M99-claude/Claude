@@ -47,4 +47,8 @@ def sync(providers: dict, sheet, date_from: date, date_to: date, dry_run: bool =
             log.info("[dry-run] %s", tx.to_row())
     else:
         sheet.append([tx.to_row() for tx in new])
+        # Starším riadkom (zapísaným pred pridaním stĺpca) doplníme IBAN účtu.
+        ibans = {name: p.iban for name, p in providers.items() if getattr(p, "iban", "")}
+        if ibans:
+            sheet.fill_account_iban(ibans)
     return result

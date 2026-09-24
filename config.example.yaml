@@ -24,3 +24,4 @@ accounts:
   - name: Tatra osobný
     provider: enablebanking
     account_uid: "00000000-0000-0000-0000-000000000000"   # z `python -m bank_sync eb-session <code>`
+    # iban: SK...   # voliteľné – inak sa zistí z API banky
